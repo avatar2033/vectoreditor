@@ -73,6 +73,7 @@ void RenderArea::setLineWidth(const int &width)
  */
 void RenderArea::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
+    mousePosition = mouseEvent->scenePos();
     if (mouseEvent->button() & Qt::LeftButton) {
         switch (selectedTool) {
         case Tool::Polyline: {
@@ -82,6 +83,8 @@ void RenderArea::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
             startPoint->setParentItem(polyline);
             connect(startPoint, &Vertex::moved,
                     polyline, &Polyline::moveVertex);
+            connect(startPoint, &Vertex::deleted,
+                    polyline, &Polyline::onVertexDeleted);
             polyline->addVertex(startPoint);
             currentItem = polyline;
             addItem(currentItem);
@@ -92,6 +95,8 @@ void RenderArea::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
             Vertex *point = new Vertex(mouseEvent->scenePos());
             connect(point, &Vertex::moved,
                     qgraphicsitem_cast<Polyline*>(currentItem), &Polyline::moveVertex);
+            connect(point, &Vertex::deleted,
+                    qgraphicsitem_cast<Polyline*>(currentItem), &Polyline::onVertexDeleted);
             point->setParentItem(currentItem);
             qgraphicsitem_cast<Polyline*>(currentItem)->addVertex(point);
             break;
@@ -149,6 +154,24 @@ void RenderArea::keyPressEvent(QKeyEvent *keyEvent)
         }
     }
     }
+}
+
+/**
+ * @brief Удаление элемента со сцены. Нужно для корректного удаления
+ * кастомных элементов.
+ * @param QGraphicsItem* item Указатель на элемент сцены
+ */
+void RenderArea::removeItem(QGraphicsItem *item)
+{
+    switch (item->type()) {
+    case Vertex::Type : {
+        Vertex *vert = qgraphicsitem_cast<Vertex*>(item);
+        emit vert->deleted(vert);
+        break;
+    }
+    }
+
+    QGraphicsScene::removeItem(item);
 }
 
 /**

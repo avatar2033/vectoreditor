@@ -14,12 +14,19 @@ public:
     /**
      * @brief Центр фигуры в системе координат сцены
      */
-    QPointF scenePos;
+    QPointF scenePosition;
 
     explicit Vertex(QPointF pos, qreal radius = 3, QObject *parent = nullptr);
     ~Vertex() override;
 
+    // Определение типа для кастомного QGraphicsItem
+    // Нужно для возможности применения к нему qgraphicsitem_cast
+    enum { Type = UserType + 2 };
+    int type() const override;
+
 protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
 
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
@@ -31,8 +38,15 @@ private:
      */
     qreal radius;
 
+    /**
+     * @brief Вспомогательная переменная для вычисления координат курсора
+     * после отпускания кнопки мыши
+     */
+    QPointF clickOffsetPos;
+
 signals:
     void moved(Vertex *v, qreal xpos, qreal ypos);
+    void deleted(Vertex *v);
 
 };
 

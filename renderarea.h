@@ -30,6 +30,7 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
     void keyPressEvent(QKeyEvent *keyEvent) override;
+    void removeItem(QGraphicsItem *item);
 
 private:
     /**
@@ -51,6 +52,8 @@ private:
      * @brief Указатель на таймер для перерисовки сцены
      */
     QTimer *updateTimer;
+
+    QPointF mousePosition;
 
 public slots:
     void setSelectedTool(Tool tool);

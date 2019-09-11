@@ -56,10 +56,12 @@ QList<Polyline *> SvgReader::getPolylines(const QString filename)
                 vertex->setParentItem(polyline);
                 connect(vertex, &Vertex::moved,
                         polyline, &Polyline::moveVertex);
+                connect(vertex, &Vertex::deleted,
+                        polyline, &Polyline::onVertexDeleted);
                 polyline->addVertex(vertex);
 
             }
-            polyline->scenePos = polyline->sceneBoundingRect().center();
+            polyline->scenePosition = polyline->sceneBoundingRect().center();
             polyline->setPath(path);
             polylineList.append(polyline);
         }

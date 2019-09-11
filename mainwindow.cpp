@@ -12,6 +12,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // Задание начальных размеров окна
+    resize(QSize(640, 480));
+
     createActions();
     buildMenu();
 }
@@ -102,7 +105,7 @@ void MainWindow::createActions()
     renderScene = new RenderArea();
     connect(this, &MainWindow::activeToolChanged,
             renderScene, &RenderArea::setSelectedTool);
-    renderView = new QGraphicsView(renderScene);
+    renderView = new RenderView(renderScene);
     renderView->setFrameStyle(0);
     renderScene->setSceneRect(0,0, 1024, 768);
     renderView->setMouseTracking(true);

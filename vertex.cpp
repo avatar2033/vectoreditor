@@ -1,15 +1,16 @@
 #include "vertex.h"
 
+#include <QCursor>
 #include <QDebug>
 
 
 Vertex::Vertex(QPointF pos, qreal radius, QObject *parent) : QObject(parent),
     QGraphicsEllipseItem()
 {
-    scenePos = pos;
+    scenePosition = pos;
+    clickOffsetPos = pos;
     setRect(QRectF(pos.x() - radius, pos.y() - radius,
                    abs(radius * 2), abs(radius * 2)));
-    setFlag(ItemIsMovable);
     setAcceptHoverEvents(true);
 
     this->radius = radius;
@@ -17,6 +18,31 @@ Vertex::Vertex(QPointF pos, qreal radius, QObject *parent) : QObject(parent),
 
 Vertex::~Vertex()
 {
+}
+
+int Vertex::type() const
+{
+    return Type;
+}
+
+/**
+ * @brief Обработчик события клика мыши
+ * @param mouseEvent
+ */
+void Vertex::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
+{
+    scenePosition = mouseEvent->pos();
+}
+
+/**
+ * @brief Обработчик события отпускания кнопки мыши
+ * @param mouseEvent
+ */
+void Vertex::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
+{
+    Q_UNUSED(mouseEvent)
+
+    scenePosition = clickOffsetPos;
 }
 
 /**
@@ -45,9 +71,9 @@ void Vertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
  */
 void Vertex::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    auto dx = mouseEvent->scenePos().x() - scenePos.x();
-    auto dy = mouseEvent->scenePos().y() - scenePos.y();
-    moveBy(dx, dy);
-    scenePos = mouseEvent->scenePos();
+    setPos(mapToParent(mouseEvent->pos() - scenePosition));
+    auto dx = mouseEvent->pos().x() - scenePosition.x();
+    auto dy = mouseEvent->pos().y() - scenePosition.y();
     emit moved(this, dx, dy);
+    clickOffsetPos += QPointF(dx, dy);
 }

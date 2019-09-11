@@ -1,10 +1,11 @@
 #include "polyline.h"
 
+#include <QCursor>
 #include <QDebug>
 
 Polyline::Polyline(QObject* parent) : QObject(parent), QGraphicsPathItem ()
 {
-    setFlags(ItemIsMovable | ItemIsSelectable);
+    setFlags(ItemIsSelectable);
 
     previousPoint = new QPointF;
 }
@@ -23,6 +24,45 @@ int Polyline::type() const
 }
 
 /**
+ * @brief Перерисовка ломаной
+ */
+void Polyline::updatePath()
+{
+    QPainterPath newPath;
+
+    bool first = true;
+
+    foreach (auto vertex, vertexes) {
+        if (first) {
+            newPath.moveTo(vertex->scenePosition);
+            first = false;
+        } else {
+            newPath.lineTo(vertex->scenePosition);
+        }
+    }
+    setPath(newPath);
+}
+
+/**
+ * @brief Обработчик события клика мыши
+ * @param mouseEvent
+ */
+void Polyline::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
+{
+    scenePosition = mouseEvent->pos();
+    QGraphicsPathItem::mousePressEvent(mouseEvent);
+}
+
+/**
+ * @brief Обработчик события отпускания кнопки мыши
+ * @param mouseEvent
+ */
+void Polyline::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
+{
+    QGraphicsPathItem::mouseReleaseEvent(mouseEvent);
+}
+
+/**
  * @brief Слот для перемещения вершины и обновления пути ломаной
  * @param Vertex* vertex Указатель на передвигаемую точку ломаной
  * @param qreal dx Смещение вершины по оси X
@@ -30,15 +70,31 @@ int Polyline::type() const
  */
 void Polyline::moveVertex(Vertex *vertex, qreal dx, qreal dy)
 {
-    QPainterPath linePath = path();
-    for(int i = 0; i < linePath.elementCount(); i++){
-        if(vertexes.at(i) == vertex){
-            QPointF point = linePath.elementAt(i);
-            linePath.setElementPositionAt(i, point.x() + dx, point.y() + dy);
-            scenePos = sceneBoundingRect().center();
+    QPainterPath painterPath = path();
+    for (int i = 0; i < painterPath.elementCount(); i++){
+        if (vertexes.at(i) == vertex) {
+            QPointF point = painterPath.elementAt(i);
+            painterPath.setElementPositionAt(i, point.x() + dx, point.y() + dy);
         }
     }
-    setPath(linePath);
+    setPath(painterPath);
+}
+
+/**
+ * @brief Обработчик события удаления вершины ломаной
+ * @details Обновляет объект ломаной и перерисовывает путь.
+ * @warning Не удаляет указатель. Только удаляет его из списка вершин и
+ * вызывает метод перерисовки пути.
+ * @param Vertex* v Указатель на вершину в ломаной
+ */
+void Polyline::onVertexDeleted(Vertex *v)
+{
+    for (int i = 0; i < vertexes.size(); i++) {
+        if (vertexes.at(i) == v) {
+            vertexes.remove(i);
+            updatePath();
+        }
+    }
 }
 
 /**
@@ -51,18 +107,18 @@ void Polyline::addVertex(Vertex *vertex)
     // добавленной. Иначе продолжаем рисовать последовательно.
     QPainterPath painterPath;
     if (vertexes.empty()) {
-        previousPoint->setX(vertex->scenePos.x());
-        previousPoint->setY(vertex->scenePos.y());
+        previousPoint->setX(vertex->scenePosition.x());
+        previousPoint->setY(vertex->scenePosition.y());
         painterPath.moveTo(*previousPoint);
     } else {
-        *previousPoint = vertexes.last()->pos();
+        *previousPoint = vertexes.last()->scenePos();
         painterPath = path();
-        painterPath.lineTo(vertex->scenePos);
+        painterPath.lineTo(vertex->scenePosition);
     }
     setPath(painterPath);
 
     vertexes.append(vertex);
-    scenePos = sceneBoundingRect().center();
+    scenePosition = sceneBoundingRect().center();
 }
 
 /**
@@ -81,15 +137,7 @@ void Polyline::setBrush(const QBrush &brush)
  */
 void Polyline::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    auto dx = mouseEvent->scenePos().x() - scenePos.x();
-    auto dy = mouseEvent->scenePos().y() - scenePos.y();
-    moveBy(dx,dy);
-    scenePos = mouseEvent->scenePos();
-
-    foreach (auto vertex, vertexes) {
-        vertex->scenePos.setX(vertex->scenePos.x() + dx);
-        vertex->scenePos.setY(vertex->scenePos.y() + dy);
-    }
+    setPos(mapToParent(mouseEvent->pos() - scenePosition));
 }
 
 /**
@@ -101,7 +149,7 @@ void Polyline::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
  */
 void Polyline::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-    QPointF clickPos = event->scenePos();
+    QPointF clickPos = event->pos();
     QLineF checkLineFirst(clickPos.x() - 5, clickPos.y() - 5, clickPos.x() + 5, clickPos.y() + 5);
     QLineF checkLineSecond(clickPos.x() + 5, clickPos.y() - 5, clickPos.x() - 5, clickPos.y() + 5);
     QPainterPath oldPath = path();
@@ -120,6 +168,8 @@ void Polyline::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
             newVertex->setParentItem(this);
             connect(newVertex, &Vertex::moved,
                     this, &Polyline::moveVertex);
+            connect(newVertex, &Vertex::deleted,
+                    this, &Polyline::onVertexDeleted);
             vertexes.insert(i + 1, newVertex);
         } else {
             if(i == 0){
@@ -134,8 +184,6 @@ void Polyline::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
         }
     }
     setPath(newPath);
-
-    QGraphicsPathItem::mouseDoubleClickEvent(event);
 }
 
 

@@ -29,6 +29,7 @@ SOURCES += \
         mainwindow.cpp \
         polyline.cpp \
         renderarea.cpp \
+        renderview.cpp \
         svgreader.cpp \
         vertex.cpp
 
@@ -36,6 +37,7 @@ HEADERS += \
         mainwindow.h \
         polyline.h \
         renderarea.h \
+        renderview.h \
         svgreader.h \
         vertex.h
 

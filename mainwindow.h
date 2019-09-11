@@ -15,6 +15,7 @@
 #include <QDebug>
 
 #include "renderarea.h"
+#include "renderview.h"
 
 namespace Ui {
 class MainWindow;
@@ -53,7 +54,7 @@ private:
 
     // Отрисовка графической сцены
     RenderArea *renderScene;
-    QGraphicsView *renderView;
+    RenderView *renderView;
 
     // Статус бар
     QLabel *statusBarLabel;
